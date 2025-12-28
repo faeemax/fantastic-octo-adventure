@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pastel Mood Quotes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #FFD1DC; 
+            --font-main: 'Quicksand', sans-serif;
+            --transition-speed: 0.8s;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            /* Changed to min-height to allow scrolling for massive quotes */
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color var(--transition-speed) ease;
+            cursor: pointer;
+            padding: 60px 20px 120px 20px; /* Generous padding to clear the fixed button */
+        }
+
+        .container {
+            text-align: center;
+            max-width: 700px;
+            width: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #quote-text {
+            /* Font size is now handled dynamically via JS, but we keep a base style */
+            font-weight: 500;
+            color: #444;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.6s ease, transform 0.6s ease, letter-spacing 0.5s ease, font-size 0.3s ease;
+            word-wrap: break-word; /* Prevents long words from breaking layout */
+        }
+
+        #author-name {
+            font-size: clamp(0.7rem, 1.2vw, 0.85rem);
+            font-weight: 500;
+            color: #777;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        /* Fixed UI Layer */
+        .ui-layer {
+            position: fixed;
+            bottom: 40px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        button {
+            pointer-events: auto;
+            padding: 12px 28px;
+            font-family: var(--font-main);
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #444;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(15px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        button:hover {
+            background-color: rgba(255, 255, 255, 0.9);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+
+        button:disabled { cursor: wait; opacity: 0.5; }
+
+        .show { opacity: 1 !important; transform: translateY(0) !important; }
+
+        .loading-dots:after { content: '...'; animation: dots 1.5s steps(5, end) infinite; }
+        @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60% { content: '...'; } }
+    </style>
+</head>
+<body id="body">
+
+    <div class="container">
+        <p id="quote-text">Harmonizing...</p>
+        <p id="author-name"></p>
+    </div>
+
+    <div class="ui-layer">
+        <button id="new-quote-btn">NEW VIBE</button>
+    </div>
+
+    <script>
+        const API_URL = 'https://thequoteshub.com/api/';
+        const palette = ["#FFD1DC", "#E6E6FA", "#BFFCC6", "#FFDAB9", "#89CFF0", "#FFF9C4"];
+        
+        const body = document.getElementById('body');
+        const quoteText = document.getElementById('quote-text');
+        const authorName = document.getElementById('author-name');
+        const newBtn = document.getElementById('new-quote-btn');
+
+        async function fetchNewQuote() {
+            newBtn.disabled = true;
+            newBtn.classList.add('loading-dots');
+            quoteText.classList.remove('show');
+            authorName.classList.remove('show');
+
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                renderMood(data.text || data.quote, data.author);
+            } catch (error) {
+                renderMood("Simple things are beautiful.", "Aesthetic");
+            } finally {
+                newBtn.disabled = false;
+                newBtn.classList.remove('loading-dots');
+            }
+        }
+
+        function renderMood(text, author) {
+            // 1. Solve Extra Large Quote Problem
+            const charCount = text.length;
+            let fontSize;
+            let lineHeight;
+
+            if (charCount > 200) {
+                fontSize = "clamp(1rem, 2.5vw, 1.3rem)";
+                lineHeight = "1.4";
+            } else if (charCount > 100) {
+                fontSize = "clamp(1.1rem, 3vw, 1.6rem)";
+                lineHeight = "1.5";
+            } else {
+                fontSize = "clamp(1.3rem, 4vw, 2rem)";
+                lineHeight = "1.6";
+            }
+
+            // 2. Update Visuals
+            const newColor = palette[Math.floor(Math.random() * palette.length)];
+            body.style.backgroundColor = newColor;
+
+            // 3. Apply Text & Dynamic Styling
+            quoteText.style.fontSize = fontSize;
+            quoteText.style.lineHeight = lineHeight;
+            quoteText.textContent = `“${text}”`;
+            authorName.textContent = author ? author : "Unknown";
+            
+            // Random slight variations for playfulness
+            quoteText.style.letterSpacing = (Math.random() * 0.02).toFixed(3) + "em";
+
+            // 4. Reveal
+            setTimeout(() => {
+                quoteText.classList.add('show');
+                authorName.classList.add('show');
+                // Scroll to top in case previous quote was long and user scrolled down
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 200);
+        }
+
+        // Listeners
+        window.addEventListener('DOMContentLoaded', fetchNewQuote);
+        
+        body.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON' && !newBtn.disabled) fetchNewQuote();
+        });
+
+        newBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fetchNewQuote();
+        });
+    </script>
+</body>
+</html>
